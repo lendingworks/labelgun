@@ -241,10 +241,6 @@ func taint(nodeName string, tagKey string, tagValue string, taintOperation Taint
 	for i := range nodeTaints {
 		if taint.MatchTaint(&nodeTaints[i]) {
 			if equality.Semantic.DeepEqual(taint, nodeTaints[i]) {
-				_, err = clientset.CoreV1().Nodes().Update(newNode)
-				if err != nil {
-					log.Error(err)
-				}
 				return
 			}
 			newTaints = append(newTaints, taint)

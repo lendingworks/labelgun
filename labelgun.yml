@@ -10,15 +10,19 @@ spec:
       name: labelgun
     spec:
       containers:
-      - image: dailyhotel/labelgun
+      - image: geota/labelgun
         imagePullPolicy: Always
         name: labelgun
         env:
-          - name: KUBE_MASTER
-            value: "172.16.31.10:8080"
           - name: AWS_REGION
-            value: "us-east-1"
+            value: "us-west-2"
           - name: LABELGUN_INTERVAL
             value: "360"
           - name: LABELGUN_SUPPRESS_LOG
             value: "false"
+          - name: LABELGUN_NO_SCHEDULE_TAG_PREFIX
+            value: "rmn.io/no-schedule"
+          - name: LABELGUN_PREFER_NO_SCHEDULE_TAG_PREFIX
+            value: "rmn.io/prefer-no-schedule"
+          - name: LABELGUN_NO_EXECUTE_TAG_PREFIX
+            value: "rmn.io/no-execute"

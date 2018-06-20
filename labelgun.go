@@ -18,8 +18,18 @@ import (
 	"github.com/aws/aws-sdk-go/service/ec2"
 	log "github.com/golang/glog"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/pkg/api/v1"
 	"k8s.io/client-go/rest"
+	"k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/equality"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+)
+
+type TaintOperation string
+
+const (
+   PreferNoSchedule    TaintOperation = "PreferNoSchedule"
+   NoSchedule          TaintOperation = "NoSchedule"
+   NoExecute           TaintOperation = "NoExecute"
 )
 
 func usage() {
@@ -43,16 +53,36 @@ func interval() int64 {
 	return val
 }
 
+func noScheduleTaintTagPrefix() string {
+	val := os.Getenv("LABELGUN_NO_SCHEDULE_TAG_PREFIX")
+	return val
+}
+
+func preferNoScheduleTaintTagPrefix() string {
+	val := os.Getenv("LABELGUN_PREFER_NO_SCHEDULE_TAG_PREFIX")
+	return val
+}
+
+func noExecuteTaintTagPrefix() string {
+	val := os.Getenv("LABELGUN_NO_EXECUTE_TAG_PREFIX")
+	return val
+}
+
+
 func main() {
 	config, err := rest.InClusterConfig()
 	if err != nil {
 		log.Fatalf(err.Error())
 	}
 
+	noScheduleTaintTagPrefix := noScheduleTaintTagPrefix()
+	preferNoScheduleTaintTagPrefix := preferNoScheduleTaintTagPrefix()
+	noExecuteTaintTagPrefix := noExecuteTaintTagPrefix()
+
 	for {
 		// Get Kube Nodes
 		clientset := kubeClient(config)
-		nodes, err := clientset.CoreV1().Nodes().List(v1.ListOptions{})
+		nodes, err := clientset.CoreV1().Nodes().List(metav1.ListOptions{})
 		if err != nil {
 			log.Fatalf(err.Error())
 		}
@@ -120,6 +150,20 @@ func main() {
 				}
 
 				label(nodeName, tagKey, tagValue)
+				// order matters here
+				// we apply the most conservative taint last to ensure prefixes that match multiple labels get the most conservative taint operation applied
+				if preferNoScheduleTaintTagPrefix != "" &&
+					(preferNoScheduleTaintTagPrefix == "*" || strings.HasPrefix(tagKey, preferNoScheduleTaintTagPrefix)) {
+					taint(nodeName, tagKey, tagValue, PreferNoSchedule)
+				}
+				if noScheduleTaintTagPrefix != "" &&
+					(noScheduleTaintTagPrefix == "*" || strings.HasPrefix(tagKey, noScheduleTaintTagPrefix)) {
+					taint(nodeName, tagKey, tagValue, NoSchedule)
+				}
+				if noExecuteTaintTagPrefix != "" &&
+					(noExecuteTaintTagPrefix == "*" || strings.HasPrefix(tagKey, noExecuteTaintTagPrefix)) {
+					taint(nodeName, tagKey, tagValue, NoExecute)
+				}
 			}
 		}
 		// Sleep until interval
@@ -154,7 +198,7 @@ func label(nodeName string, tagKey string, tagValue string) {
 	}
 
 	clientset := kubeClient(config)
-	node, err := clientset.CoreV1().Nodes().Get(nodeName)
+	node, err := clientset.CoreV1().Nodes().Get(nodeName, metav1.GetOptions{})
 	if err != nil {
 		log.Fatalf(err.Error())
 	}
@@ -163,6 +207,61 @@ func label(nodeName string, tagKey string, tagValue string) {
 	labels[tagKey] = tagValue
 
 	_, err = clientset.CoreV1().Nodes().Update(node)
+	if err != nil {
+		log.Error(err)
+	}
+}
+
+func taint(nodeName string, tagKey string, tagValue string, taintOperation TaintOperation) {
+	log.Infoln(fmt.Sprintf("kubectl node %s %s=%s %s", nodeName, tagKey, tagValue, taintOperation))
+
+	var taint v1.Taint
+	effect := v1.TaintEffect(taintOperation)
+
+	taint.Key = tagKey
+    taint.Value = tagValue
+    taint.Effect = effect
+
+	config, err := rest.InClusterConfig()
+	if err != nil {
+		log.Fatalf(err.Error())
+	}
+
+	clientset := kubeClient(config)
+	node, err := clientset.CoreV1().Nodes().Get(nodeName, metav1.GetOptions{})
+	if err != nil {
+		log.Fatalf(err.Error())
+	}
+
+	newNode := node.DeepCopy()
+	nodeTaints := newNode.Spec.Taints
+
+	var newTaints []v1.Taint
+	updated := false
+	for i := range nodeTaints {
+		if taint.MatchTaint(&nodeTaints[i]) {
+			if equality.Semantic.DeepEqual(taint, nodeTaints[i]) {
+				_, err = clientset.CoreV1().Nodes().Update(newNode)
+				if err != nil {
+					log.Error(err)
+				}
+				return
+			}
+			newTaints = append(newTaints, taint)
+			updated = true
+			continue
+		}
+
+		newTaints = append(newTaints, nodeTaints[i])
+	}
+
+	if !updated {
+		newTaints = append(newTaints, taint)
+	}
+
+	newNode.Spec.Taints = newTaints
+
+	_, err = clientset.CoreV1().Nodes().Update(newNode)
 	if err != nil {
 		log.Error(err)
 	}

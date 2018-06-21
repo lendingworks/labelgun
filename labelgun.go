@@ -32,6 +32,8 @@ const (
    NoExecute           TaintOperation = "NoExecute"
 )
 
+const k8sReservedLabelPrefix = "kubernetes.io/"
+
 func usage() {
 	fmt.Fprintf(os.Stderr, "usage: labelgun -stderrthreshold=[INFO|WARN|FATAL]\n")
 	flag.PrintDefaults()
@@ -68,6 +70,10 @@ func noExecuteTaintTagPrefix() string {
 	return val
 }
 
+func labelTagPrefix() string {
+	val := os.Getenv("LABELGUN_LABEL_TAG_PREFIX")
+	return val
+}
 
 func main() {
 	config, err := rest.InClusterConfig()
@@ -149,7 +155,16 @@ func main() {
 					continue
 				}
 
-				label(nodeName, tagKey, tagValue)
+				if strings.HasPrefix(tagKey, k8sReservedLabelPrefix) {
+					continue
+				}
+
+				labelTagPrefix = labelTagPrefix()
+
+				if labelTagPrefix == "*" || strings.HasPrefix(tagKey, labelTagPrefix) {
+					label(nodeName, tagKey, tagValue)
+				}
+
 				// order matters here
 				// we apply the most conservative taint last to ensure prefixes that match multiple labels get the most conservative taint operation applied
 				if preferNoScheduleTaintTagPrefix != "" &&

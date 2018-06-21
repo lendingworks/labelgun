@@ -159,7 +159,7 @@ func main() {
 					continue
 				}
 
-				labelTagPrefix = labelTagPrefix()
+				labelTagPrefix := labelTagPrefix()
 
 				if labelTagPrefix == "*" || strings.HasPrefix(tagKey, labelTagPrefix) {
 					label(nodeName, tagKey, tagValue)

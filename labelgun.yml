@@ -10,6 +10,7 @@ spec:
       labels:
         app: labelgun
     spec:
+      serviceAccount: eks-admin
       containers:
         -
           env:
@@ -22,9 +23,6 @@ spec:
             -
               name: LABELGUN_INTERVAL
               value: "360"
-            -
-              name: LABELGUN_SUPPRESS_LOG
-              value: "false"
             -
               name: LABELGUN_LABEL_TAG_PREFIX
               value: rmn.io/

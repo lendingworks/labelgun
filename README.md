@@ -30,7 +30,6 @@ Edit the `labelgun.yml` with appropriate Environment Variable values for:
 
 - [`LABELGUN_ERR_THRESHOLD`](https://godoc.org/github.com/golang/glog)  logging threshold
 - `LABELGUN_INTERVAL` seconds to poll for new tags to apply labels and taints for.
-- `LABELGUN_SUPPRESS_LOG` boolean to supress logging.
 - `LABELGUN_LABEL_TAG_PREFIX` prefix to filter tags - only adds labels to nodes for tags that match this prefix - set to `*` wildcard to label all tags (regex not supported).
 - `LABELGUN_NO_SCHEDULE_TAG_PREFIX` prefix to filter tags - only adds NO_SCHEDULE taints to nodes for tags that match this prefix - set to `*` wildcard to add taints all tags (regex not supported).
 - `LABELGUN_PREFER_NO_SCHEDULE_TAG_PREFIX` prefix to filter tags - only adds PREFER_NO_SCHEDULE taints to node for tags that match this prefix - set to `*` wildcard to add taints all tags (regex not supported).
@@ -67,9 +66,6 @@ spec:
             -
               name: LABELGUN_INTERVAL
               value: "360"
-            -
-              name: LABELGUN_SUPPRESS_LOG
-              value: "false"
             -
               name: LABELGUN_LABEL_TAG_PREFIX
               value: rmn.io/

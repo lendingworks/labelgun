@@ -84,6 +84,7 @@ func main() {
 	noScheduleTaintTagPrefix := noScheduleTaintTagPrefix()
 	preferNoScheduleTaintTagPrefix := preferNoScheduleTaintTagPrefix()
 	noExecuteTaintTagPrefix := noExecuteTaintTagPrefix()
+	labelTagPrefix := labelTagPrefix()
 
 	for {
 		// Get Kube Nodes
@@ -158,8 +159,6 @@ func main() {
 				if strings.HasPrefix(tagKey, k8sReservedLabelPrefix) {
 					continue
 				}
-
-				labelTagPrefix := labelTagPrefix()
 
 				if labelTagPrefix == "*" || strings.HasPrefix(tagKey, labelTagPrefix) {
 					label(nodeName, tagKey, tagValue)

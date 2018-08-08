@@ -12,7 +12,8 @@ spec:
         app: labelgun
         namespace: labelgun
       annotations:
-        iam.amazonaws.com/role: pam.uat.k8s.lendingworks.co.uk--labelgun
+        # Uncomment the below if using kiam/kube2iam.
+        # iam.amazonaws.com/role: <IAM_ROLE>
     spec:
       serviceAccount: labelgun-serviceaccount
       containers:

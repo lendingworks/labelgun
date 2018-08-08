@@ -1,5 +1,5 @@
-#!/bin/bash
-ACCOUNT=vungle
+#!/usr/bin/env bash
+ACCOUNT=lendingworks
 APP=labelgun
 docker run --rm -it -v "$PWD":/go/src/github.com/$ACCOUNT/$APP -w /go/src/github.com/$ACCOUNT/$APP/ golang:1.4.2-cross sh -c '
 go get
@@ -12,4 +12,4 @@ for GOOS in darwin linux windows; do
   done
 done
 '
-docker build -t vungle/labelgun .
+docker build -t lendingworks/labelgun .

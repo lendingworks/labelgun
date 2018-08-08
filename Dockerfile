@@ -6,12 +6,12 @@ ARG BUILD_DATE
 
 # Metadata
 LABEL org.label-schema.vcs-ref=$VCS_REF \
-      org.label-schema.vcs-url="https://github.com/geota/labelgun" \
+      org.label-schema.vcs-url="https://github.com/lendingworks/labelgun" \
       org.label-schema.build-date=$BUILD_DATE \
       org.label-schema.docker.dockerfile="/Dockerfile"
 
 # Install kubectl
-ENV KUBE_LATEST_VERSION="v1.10.0-alpha.1"
+ENV KUBE_LATEST_VERSION="v1.10.5"
 
 RUN apk add --update ca-certificates curl \
  && curl -L https://storage.googleapis.com/kubernetes-release/release/${KUBE_LATEST_VERSION}/bin/linux/amd64/kubectl -o /usr/local/bin/kubectl \
